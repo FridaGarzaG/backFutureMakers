@@ -6,7 +6,6 @@ using backend.Models;
 using backend.Data;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace backend.Controllers
 {
@@ -21,89 +20,122 @@ namespace backend.Controllers
             _context = context;
         }
 
-        [HttpPost("enviar-codigo")]
-        public async Task<IActionResult> EnviarCodigo([FromBody] TelefonoRequest request)
-        {
-            var codigo = GenerarCodigo();
-
-            var credentials = Credentials.FromApiKeyAndSecret(
-                "4f5a272e",                 // ← Tu API Key
-                "YZImmO3c6xE4dpTl"          // ← Tu API Secret
-            );
-
-            var client = new VonageClient(credentials);
-
-            var smsRequest = new SendSmsRequest
-            {
-                To = "+52" + request.Telefono,
-                From = "Vonage APIs",
-                Text = $"Tu código de verificación es: {codigo}"
-            };
-
-            var response = await client.SmsClient.SendAnSmsAsync(smsRequest);
-
-            if (response.Messages[0].Status != "0")
-            {
-                return BadRequest(new { error = response.Messages[0].ErrorText });
-            }
-
-            return Ok(new { mensaje = "Código enviado correctamente", codigo });
-        }
-
+        // POST: api/auth/registro
         [HttpPost("registro")]
         public IActionResult RegistrarUsuario([FromBody] Usuario usuario)
         {
-            // Validar nombre único
             if (_context.Usuarios.Any(u => u.Nombre == usuario.Nombre))
             {
                 return Conflict(new { mensaje = "Este nombre ya está registrado." });
             }
 
-            // Validar teléfono único
             if (_context.Usuarios.Any(u => u.Telefono == usuario.Telefono))
             {
                 return Conflict(new { mensaje = "Este número ya está registrado." });
             }
 
-            // Guardar usuario
             _context.Usuarios.Add(usuario);
             _context.SaveChanges();
 
-            // Generar código y guardar en tabla de verificación
             var codigo = GenerarCodigo();
-            var codigoVerificacion = new CodigoVerificacion
+
+            var clave = new Clave
             {
-                user_id = usuario.Id,
-                Codigo = codigo,
-                Telefono = usuario.Telefono,
-                Expiracion = DateTime.Now.AddMinutes(5),
-                Usado = false
+                CodigoClave = codigo,
+                UsuarioId = usuario.Id,
+                TelefonoUsuario = usuario.Telefono,
+                Usado = false,
+                Expiracion = DateTime.Now.AddMinutes(5)
             };
 
-            _context.CodigosVerificacion.Add(codigoVerificacion);
+            _context.Claves.Add(clave);
             _context.SaveChanges();
 
-            // Enviar código vía SMS
             EnviarCodigoSms(usuario.Telefono, codigo);
 
-            return Ok(new { mensaje = "Usuario registrado exitosamente", codigoEnviado = codigo });
+            return Ok(new { mensaje = "Usuario registrado exitosamente." });
         }
 
-        // Genera un código aleatorio de 5 caracteres
-        private string GenerarCodigo()
+        // POST: api/auth/solicitar-codigo
+        [HttpPost("solicitar-codigo")]
+        public IActionResult SolicitarCodigo([FromBody] NombreRequest request)
         {
-            var random = new Random();
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return new string(Enumerable.Repeat(chars, 5)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+            var usuario = _context.Usuarios.FirstOrDefault(u => u.Nombre == request.Nombre);
+            if (usuario == null)
+            {
+                return NotFound(new { mensaje = "Usuario no encontrado." });
+            }
+
+            var codigo = GenerarCodigo();
+
+            var clave = new Clave
+            {
+                CodigoClave = codigo,
+                UsuarioId = usuario.Id,
+                TelefonoUsuario = usuario.Telefono,
+                Usado = false,
+                Expiracion = DateTime.Now.AddMinutes(5)
+            };
+
+            _context.Claves.Add(clave);
+            _context.SaveChanges();
+
+            EnviarCodigoSms(usuario.Telefono, codigo);
+
+            return Ok(new { mensaje = "Código enviado al número registrado.", codigo = codigo });
         }
 
-        // Envía un SMS utilizando Vonage
+        // POST: api/auth/verificar-codigo
+        [HttpPost("verificar-codigo")]
+        public IActionResult VerificarCodigo([FromBody] VerificarCodigoRequest request)
+        {
+            var usuario = _context.Usuarios.FirstOrDefault(u => u.Nombre == request.Nombre);
+            if (usuario == null)
+            {
+                return Unauthorized(new { mensaje = "Usuario no encontrado." });
+            }
+
+            var clave = _context.Claves
+                .Where(c => c.UsuarioId == usuario.Id && c.CodigoClave == request.Codigo)
+                .OrderByDescending(c => c.Expiracion)
+                .FirstOrDefault();
+
+            if (clave == null)
+            {
+                return Unauthorized(new { mensaje = "Código incorrecto." });
+            }
+
+            if (clave.Usado)
+            {
+                return Unauthorized(new { mensaje = "El código ya fue usado." });
+            }
+
+            if (clave.Expiracion < DateTime.Now)
+            {
+                return Unauthorized(new { mensaje = "El código ha expirado." });
+            }
+
+            clave.Usado = true;
+            _context.SaveChanges();
+
+            return Ok(new
+            {
+                mensaje = "Inicio de sesión exitoso.",
+                usuario = new
+                {
+                    usuario.Id,
+                    usuario.Nombre,
+                    usuario.Telefono
+                }
+            });
+        }
+
+        // Método auxiliar para enviar el código SMS con Vonage
         private void EnviarCodigoSms(string telefono, string codigo)
         {
             var credentials = Credentials.FromApiKeyAndSecret(
-                "4f5a272e",
-                "YZImmO3c6xE4dpTl"
+                "4f5a272e",                  // Tu API key
+                "YZImmO3c6xE4dpTl"           // Tu API secret
             );
 
             var client = new VonageClient(credentials);
@@ -122,5 +154,24 @@ namespace backend.Controllers
                 Console.WriteLine($"Error al enviar SMS: {response.Messages[0].ErrorText}");
             }
         }
+
+        // Método auxiliar para generar código de 5 dígitos
+        private string GenerarCodigo()
+        {
+            var random = new Random();
+            return random.Next(10000, 99999).ToString();
+        }
+    }
+
+    // DTOs para solicitudes
+    public class NombreRequest
+    {
+        public string Nombre { get; set; } = null!;
+    }
+
+    public class VerificarCodigoRequest
+    {
+        public string Nombre { get; set; } = null!;
+        public string Codigo { get; set; } = null!;
     }
 }

@@ -1,8 +1,8 @@
 namespace backend.Models
 {
-    public class TelefonoRequest
+    public class VerificarCodigoRequest
     {
-        public string Telefono { get; set; } = null!;
+        public string Nombre { get; set; } = null!;
         public string Codigo { get; set; } = null!;
     }
 }

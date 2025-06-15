@@ -1,0 +1,29 @@
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+
+# Rider / JetBrains IDE
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# appsettings local or secrets
+backend/bin/
+backend/obj/
+appsettings.json
+secrets.json
+
+# Logs
+*.log
+
+# Others
+*.DS_Store
+
+backend/bin/
+backend/obj/
+*.user

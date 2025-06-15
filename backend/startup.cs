@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using backend.Data;
+using backend.Data;  // Asegúrate que el namespace y la clase AppDbContext coincidan con tu proyecto
 using System;
 
 namespace backend
@@ -20,18 +20,25 @@ namespace backend
 
         public void ConfigureServices(IServiceCollection services)
         {
+            string baseConnection = Configuration.GetConnectionString("DefaultConnection"); // termina en Password=
+            string password = Configuration["DBPassword"]; // leído desde secrets.json
+
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new Exception("La contraseña para la base de datos no está configurada.");
+            }
+
+            string fullConnectionString = $"{baseConnection}{password}";
+
             services.AddDbContext<AppDbContext>(options =>
-                options.UseMySql(
-                    Configuration.GetConnectionString("DefaultConnection"),
-                    new MySqlServerVersion(new Version(8, 0, 26))
-                ));
+                options.UseMySql(fullConnectionString, new MySqlServerVersion(new Version(8, 0, 26))));
 
             services.AddControllers();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            // Verificación de conexión a MySQL
+            // Verificación de conexión a MySQL al iniciar la app
             using (var scope = app.ApplicationServices.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

@@ -1,5 +1,4 @@
 /Users/test/backFutureMakers/backend/bin/Debug/net9.0/appsettings.Development.json
-/Users/test/backFutureMakers/backend/bin/Debug/net9.0/appsettings.json
 /Users/test/backFutureMakers/backend/bin/Debug/net9.0/backend.staticwebassets.endpoints.json
 /Users/test/backFutureMakers/backend/bin/Debug/net9.0/backend
 /Users/test/backFutureMakers/backend/bin/Debug/net9.0/backend.deps.json
@@ -64,3 +63,5 @@
 /Users/test/backFutureMakers/backend/obj/Debug/net9.0/backend.pdb
 /Users/test/backFutureMakers/backend/obj/Debug/net9.0/backend.genruntimeconfig.cache
 /Users/test/backFutureMakers/backend/obj/Debug/net9.0/ref/backend.dll
+/Users/test/backFutureMakers/backend/bin/Debug/net9.0/appsettings.json
+/Users/test/backFutureMakers/backend/bin/Debug/net9.0/secrets.json
