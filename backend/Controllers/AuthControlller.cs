@@ -24,9 +24,9 @@ namespace backend.Controllers
 
             var smsRequest = new SendSmsRequest
             {
-                To = "52" + request.Telefono,
+                To = "+52" + request.Telefono,
                 From = "Vonage APIs",
-                Text = $"Tu código de verificación es: {codigo}"
+                Text = $"Tu codigo de verificacion es: {codigo}"
             };
 
             var response = await client.SmsClient.SendAnSmsAsync(smsRequest);
@@ -36,7 +36,7 @@ namespace backend.Controllers
                 return BadRequest(new { error = response.Messages[0].ErrorText });
             }
 
-            return Ok(new { mensaje = "Código enviado correctamente", codigo });
+            return Ok(new { mensaje = "Codigo enviado correctamente", codigo });
         }
 
         private string GenerarCodigo()
