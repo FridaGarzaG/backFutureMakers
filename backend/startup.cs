@@ -33,6 +33,17 @@ namespace backend
             services.AddDbContext<AppDbContext>(options =>
                 options.UseMySql(fullConnectionString, new MySqlServerVersion(new Version(8, 0, 26))));
 
+            // 👉 Agregar CORS
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFlutter", builder =>
+                {
+                    builder.WithOrigins("http://localhost:59848") // Cambia si Flutter usa otro puerto
+                           .AllowAnyHeader()
+                           .AllowAnyMethod();
+                });
+            });
+
             services.AddControllers();
         }
 
@@ -69,6 +80,9 @@ namespace backend
             }
 
             app.UseRouting();
+
+            // 👉 Activar CORS
+            app.UseCors("AllowFlutter");
 
             app.UseEndpoints(endpoints =>
             {
