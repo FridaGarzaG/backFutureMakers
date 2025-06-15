@@ -22,3 +22,8 @@ backend/appsettings*.json
 
 # Others
 *.DS_Store
+
+backend/bin/
+backend/obj/
+*.user
+appsettings.json
