@@ -15,7 +15,8 @@ obj/
 # appsettings local or secrets
 backend/bin/
 backend/obj/
-backend/appsettings*.json
+appsettings.json
+secrets.json
 
 # Logs
 *.log
@@ -26,4 +27,3 @@ backend/appsettings*.json
 backend/bin/
 backend/obj/
 *.user
-appsettings.json
